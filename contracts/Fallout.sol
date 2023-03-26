@@ -10,6 +10,7 @@ contract Fallout {
 
     /* constructor */
     function Fal1out() public payable {
+        //@audit Fallout but this funciton says Fal1out
         owner = msg.sender;
         allocations[owner] = msg.value;
     }
