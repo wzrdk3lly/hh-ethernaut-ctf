@@ -16,7 +16,7 @@ describe("Token Exploit using attack contract", function () {
     // insert contract address of ethernaut challenge
     tokenContract = await ethers.getContractAt("Token", contractAddress);
 
-    console.log("the telephone contract is this", tokenContract);
+    console.log("the token contract is this", tokenContract);
   });
 
   it("perform exploit", async function () {
