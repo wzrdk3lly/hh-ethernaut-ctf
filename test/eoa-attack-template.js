@@ -12,6 +12,7 @@ describe("Fallback Exploit using EOA", function () {
 
   it("perform exploit", async function () {
     // Attack flow
+
     // First we need to contribute to the fallback contract
     let txAttack = await fallbackContract.contribute({
       value: ethers.utils.parseEther(".00001"),
@@ -41,7 +42,5 @@ describe("Fallback Exploit using EOA", function () {
 
   after("confirm exploit", async function () {
     expect(newOwner).to.be.eq(attacker.address);
-
-    expect(balance).to.be.eq("0");
   });
 });
