@@ -7,7 +7,7 @@ const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.6.0",
+  solidity: "0.8.0",
   networks: {
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${SEPOLIA_RPC_URL}`,
