@@ -6,7 +6,7 @@ describe("Force Exploit using attack contract", function () {
 
   before("Setup for attack", async function () {
     [attacker] = await ethers.getSigners();
-    contractAddress = "0xfc0a2dED22bb9152CACAA31854fF1C61D3ccc597"; //instance address
+    contractAddress = "0x5225968E636a608B911B384107E540972A07381A"; //instance address
     // Deploy my own attacker contract
     const attackerContractFactory = await ethers.getContractFactory("Attack");
     attackerContract = await attackerContractFactory.deploy(contractAddress);
