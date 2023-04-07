@@ -4,7 +4,11 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 describe("Reentrancy Exploit using EOA", function () {
-  // let attacker, attackerContract, falloutContract, balance, contractAddress;
+  // let attackerContract: Attack,
+  //   reentrantContract: Reentrance,
+  //   attacker: SignerWithAddress,
+  //   contractAddress: string,
+  //   finalBalance: BigNumber;
   before("Setup for attack", async function () {
     // [attacker] = await ethers.getSigners();
     // contractAddress = "0x676e57FdBbd8e5fE1A7A3f4Bb1296dAC880aa639";
