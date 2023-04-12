@@ -1,36 +1,41 @@
-import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
+import { Attack } from "../typechain-types";
+import { GatekeeperOne } from "../typechain-types";
 import { ethers } from "hardhat";
-import { BigNumber, Contract } from "ethers";
-import { Attack, Elevator, Privacy } from "../typechain-types";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Bytes, getContractAddress } from "ethers/lib/utils";
-import exp from "constants";
-import { boolean } from "hardhat/internal/core/params/argumentTypes";
 
 describe("Elevator Exploit using Contract ", function () {
   let attackerContract: Attack,
-    privacyContract: Privacy,
-    attacker: SignerWithAddress,
+    gatekeeperOneContract: GatekeeperOne,
     contractAddress: string,
     getTop: boolean;
 
   before("Setup for attack locally", async function () {
-    // Learn how to convert to type of bytes in hardhat.
-    // let bytes0 = ethers.utils.formatBytes32String("data at 0th slot");
-    // let bytes1 = ethers.utils.formatBytes32String("data at 1st slot");
-    // let bytes2 = ethers.utils.formatBytes32String("data at 2nd slot");
-    // let arrayOfBytes32: Array<string> = [bytes0, bytes1, bytes2];
-    // const privacyFactory = await ethers.getContractFactory("Privacy");
-    // privacyContract = await privacyFactory.deploy(arrayOfBytes32);
+    // Deply gate keeper one contract
+    const gatekeeperOneContractFactory = await ethers.getContractFactory(
+      "GatekeeperOne"
+    );
+
+    gatekeeperOneContract = await gatekeeperOneContractFactory.deploy();
+
+    await gatekeeperOneContract.deployed();
+
+    const attackerContractFactory = await ethers.getContractFactory("Attack");
+
+    attackerContract = await attackerContractFactory.deploy(
+      gatekeeperOneContract.address
+    );
+    await attackerContract.deployed;
   });
 
   it("perform exploit", async function () {
-    // // Attack flow
-    // 1 use ethers js to get storage slot at 5 and save as key variable
-    // 2. Cast bytes32 key data to bytes16
-    // 3. Call unlock passing in the bytes16 key
+    // Attack flow
+    // 1. Send a tx from a contract and not directly from an EOA
+    // 2. withing the contract, call enter with the address casted to bytes8 AND set the tx.gaslimit = 8191 wei
+    let txAttack = await attackerContract.attack();
+
+    let receiptAttack = await txAttack.wait();
+
+    console.log("The receipt output is ", receiptAttack);
   });
 
   after("confirm exploit", async function () {

