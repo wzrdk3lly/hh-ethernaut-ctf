@@ -2,15 +2,18 @@ import { expect } from "chai";
 import { Attack } from "../typechain-types";
 import { GatekeeperOne } from "../typechain-types";
 import { ethers } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe("Elevator Exploit using Contract ", function () {
+describe("Gatekeeper exploit using contract attack", function () {
   let attackerContract: Attack,
     gatekeeperOneContract: GatekeeperOne,
     contractAddress: string,
-    getTop: boolean;
+    attacker: SignerWithAddress,
+    getNewEntrant: string;
 
   before("Setup for attack locally", async function () {
     // Deply gate keeper one contract
+    [attacker] = await ethers.getSigners();
     const gatekeeperOneContractFactory = await ethers.getContractFactory(
       "GatekeeperOne"
     );
@@ -29,18 +32,22 @@ describe("Elevator Exploit using Contract ", function () {
 
   it("perform exploit", async function () {
     // Attack flow
+    let getOldEntrant = await gatekeeperOneContract.entrant();
+    console.log("the old entrant is: ", getOldEntrant);
     // 1. Send a tx from a contract and not directly from an EOA
     // 2. withing the contract, call enter with the address casted to bytes8 AND set the tx.gaslimit = 8191 wei
     let txAttack = await attackerContract.attack();
 
     let receiptAttack = await txAttack.wait();
 
-    console.log("The receipt output is ", receiptAttack);
+    // console.log("The receipt output is ", receiptAttack);
+    getNewEntrant = await gatekeeperOneContract.entrant();
+
+    console.log("the new entrant is, ", getNewEntrant);
   });
 
   after("confirm exploit", async function () {
     // check that the reentrance contract == 0
-
-    expect(getTop).to.be.eq(true);
+    expect(getNewEntrant).to.be.eq(attacker.address);
   });
 });

