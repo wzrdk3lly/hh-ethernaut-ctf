@@ -16,7 +16,7 @@ describe("Preservation exploit using delegate call fun", function () {
     // Setup deployment for library contracts
     [attacker] = await ethers.getSigners();
 
-    contractAddress = "0x512a585df585cfab5b49e8be38733866697ba5f0";
+    contractAddress = "0x59b09d6C6Da31eA5c7Be495BCa7A18E9c2cd5d2F";
 
     preservationContract = await ethers.getContractAt(
       "Preservation",
@@ -52,9 +52,11 @@ describe("Preservation exploit using delegate call fun", function () {
     // Check and see that the address of the library has changed like we intended  address of
 
     let newLibraryAddress = await preservationContract.timeZone1Library();
+
     console.log("The first timzone library address is ", oldLibraryAddress);
+
     console.log(
-      "The new library address is (attacker contract address)",
+      "The new library 1 address is (should be attacker contract address)",
       newLibraryAddress
     );
 

