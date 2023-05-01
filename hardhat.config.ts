@@ -14,8 +14,8 @@ const config: HardhatUserConfig = {
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${SEPOLIA_RPC_URL}`,
       accounts: [PRIVATE_KEY],
-      // gasPrice: 20000000000,
-      // gas: 6000000,
+      // gasPrice: "auto",
+      // gas: "auto",
     },
   },
 };
